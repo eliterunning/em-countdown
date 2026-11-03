@@ -3,76 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuorten EM-kilpailut Countdown</title>
+    <title>EM-Kilpailut Countdown & Piste</title>
     <style>
-        /* Pakotetaan tyylit tärkeysjärjestyksellä (!important) */
-        html, body {
-            background-color: #000000 !important;
-            color: #ffffff !important;
-            font-family: Arial, sans-serif !important;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+        /* Koko ikkunan asetukset */
+        body {
             margin: 0;
-            text-align: center;
+            padding: 0;
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             overflow: hidden;
+            font-family: Arial, sans-serif;
         }
-        
+
+        /* Tämä on se 1080x1920 alue. Skaalataan automaattisesti ruudun mukaan */
+        #canvas {
+            width: 1080px;
+            height: 1920px;
+            background-color: #000000;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            transform-origin: center center;
+        }
+
+        /* Tekstien asettelu */
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+            z-index: 10;
+            pointer-events: none; /* Ei estä pisteen liikkeitä */
+        }
+
         h1 {
-            font-size: 2.2rem;
-            color: #FFD700 !important; /* Keltainen otsikko */
-            margin: 0 0 10px 0;
+            font-size: 65px;
+            color: #FFD700;
+            margin: 0 0 20px 0;
             text-transform: uppercase;
-            padding: 0 20px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+            padding: 0 40px;
+            line-height: 1.2;
         }
-        
+
         h2 {
-            font-size: 1.5rem;
-            color: #aaaaaa !important;
-            margin: 0 0 50px 0;
+            font-size: 45px;
+            color: #aaaaaa;
+            margin: 0 0 80px 0;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
         }
 
         #countdown {
             display: flex;
-            gap: 15px;
-            font-size: 3rem;
+            justify-content: center;
+            gap: 25px;
+            font-size: 80px;
             font-weight: bold;
-            color: #ffffff !important;
+            color: #ffffff;
         }
 
         .time-box {
-            background-color: #1a1a1a !important;
-            padding: 20px;
-            border-radius: 15px;
-            min-width: 90px;
-            border: 2px solid #333333 !important;
+            background-color: rgba(26, 26, 26, 0.8);
+            padding: 30px;
+            border-radius: 20px;
+            min-width: 150px;
+            border: 3px solid #333;
+            backdrop-filter: blur(5px);
         }
 
         .label {
-            font-size: 1rem;
-            color: #888888 !important;
+            font-size: 25px;
+            color: #888;
             display: block;
-            margin-top: 10px;
+            margin-top: 15px;
             font-weight: normal;
+        }
+
+        /* Vaeltava piste */
+        #dot {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            /* Aloitusväri */
+            background-color: #FF0000; 
+            box-shadow: 0 0 25px currentColor; /* Hehkuva efekti */
+            z-index: 5;
+            /* Pehmeä värin vaihto */
+            transition: background-color 0.5s ease, box-shadow 0.5s ease;
         }
     </style>
 </head>
 <body>
-    <h1>22.-25.7. Nuorten EM-kilpailut (M/N22)</h1>
-    <h2>Bydgoszcz, Puola</h2>
-    
-    <div id="countdown">
-        <div class="time-box"><span id="days">0</span><span class="label">Päivää</span></div>
-        <div class="time-box"><span id="hours">0</span><span class="label">Tuntia</span></div>
-        <div class="time-box"><span id="minutes">0</span><span class="label">Minuuttia</span></div>
-        <div class="time-box"><span id="seconds">0</span><span class="label">Sekuntia</span></div>
+
+    <!-- 1080x1920 Kanvaasi -->
+    <div id="canvas">
+        <div class="content">
+            <h1>22.-25.7. Nuorten EM-kilpailut (M/N22)</h1>
+            <h2>Bydgoszcz, Puola</h2>
+            <div id="countdown">
+                <div class="time-box"><span id="days">0</span><span class="label">Päivää</span></div>
+                <div class="time-box"><span id="hours">0</span><span class="label">Tuntia</span></div>
+                <div class="time-box"><span id="minutes">0</span><span class="label">Minuuttia</span></div>
+                <div class="time-box"><span id="seconds">0</span><span class="label">Sekuntia</span></div>
+            </div>
+        </div>
+
+        <!-- Liikkuva piste -->
+        <div id="dot"></div>
     </div>
 
     <script>
-        // Asetetaan tavoiteajankohta: 25.7.2027 klo 12:00
-        // HUOM: Jos tarkoitat vuotta 2026, vaihda 2027 -> 2026
+        // --- 1. SKAALAUS (1080x1920 sopivaksi ruudulle) ---
+        function resizeCanvas() {
+            const canvas = document.getElementById('canvas');
+            const scale = Math.min(window.innerWidth / 1080, window.innerHeight / 1920);
+            canvas.style.transform = `scale(${scale})`;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- 2. COUNTDOWN LOGIIKKA ---
+        // Tavoiteaika: 25.7.2027 klo 12:00
         const targetDate = new Date('2027-07-25T12:00:00').getTime();
 
         function updateCountdown() {
@@ -80,7 +139,7 @@
             const distance = targetDate - now;
 
             if (distance < 0) {
-                document.getElementById('countdown').innerHTML = "<h2>Tapahtuma on alkanut tai mennyt!</h2>";
+                document.getElementById('countdown').innerHTML = "<h2>Tapahtuma on alkanut!</h2>";
                 return;
             }
 
@@ -94,10 +153,62 @@
             document.getElementById('minutes').innerText = minutes;
             document.getElementById('seconds').innerText = seconds;
         }
-
-        // Päivitä joka sekunti
         setInterval(updateCountdown, 1000);
         updateCountdown();
+
+        // --- 3. PISTEEN LIIKKUMINEN JA VÄRINVAIHTO ---
+        const dot = document.getElementById('dot');
+        const canvasW = 1080;
+        const canvasH = 1920;
+        const dotSize = 50;
+
+        // Fysiikka-asetukset
+        // 7 cm/s = ~265 pikseliä/s (perustuen 96 PPI näyttöstandardiin)
+        const speed = 265; 
+        
+        // Aloituskoordinaatit ja suunta (satunnainen kulma)
+        let x = 200;
+        let y = 200;
+        let angle = Math.random() * Math.PI * 2;
+        let vx = Math.cos(angle) * speed;
+        let vy = Math.sin(angle) * speed;
+
+        let lastTime = performance.now();
+
+        function animateDot(time) {
+            // Lasketaan kulunut aika sekunteina (esim. 0.016s = 60fps)
+            const dt = (time - lastTime) / 1000;
+            lastTime = time;
+
+            // Päivitetään sijainti
+            x += vx * dt;
+            y += vy * dt;
+
+            // Törmäykset reunoihin (kimpoaminen)
+            if (x <= 0) { x = 0; vx *= -1; }
+            if (x >= canvasW - dotSize) { x = canvasW - dotSize; vx *= -1; }
+            if (y <= 0) { y = 0; vy *= -1; }
+            if (y >= canvasH - dotSize) { y = canvasH - dotSize; vy *= -1; }
+
+            // Siirretään pistettä
+            dot.style.transform = `translate(${x}px, ${y}px)`;
+
+            requestAnimationFrame(animateDot);
+        }
+
+        // Käynnistä animaatio
+        requestAnimationFrame(animateDot);
+
+        // Värin vaihto 7 sekunnin välein
+        const colors = ['#FF0000', '#FFFF00', '#0000FF']; // Punainen, Keltainen, Sininen
+        let colorIndex = 0;
+
+        setInterval(() => {
+            colorIndex = (colorIndex + 1) % colors.length;
+            dot.style.backgroundColor = colors[colorIndex];
+            // Päivitetään myös hehkuvä efekti (box-shadow)
+            dot.style.boxShadow = `0 0 25px ${colors[colorIndex]}`;
+        }, 7000);
     </script>
 </body>
 </html>
